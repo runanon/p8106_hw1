@@ -1,42 +1,50 @@
 ---
 title: "P8106 HW 1"
-output: github_document
+output: pdf_document
+author: \sl xc2474 Xinlei Chen
 ---
+## Problem
 
-```{r, include=FALSE}
+```{r, message=FALSE, warning=FALSE}
 library(tidyverse)
 library(ISLR)
 library(glmnet)
 library(caret)
 library(corrplot)
 library(plotmo)
+library(pls)
 ```
 
-```{r, include=FALSE}
+```{r, message=FALSE, warning=FALSE}
 train = read.csv("./data/solubility_train.csv")
 test= read.csv("./data/solubility_test.csv")
 ```
 
-### (a) Fit a linear model using least squares on the training data and calculate the mean square error using the test data.
+$$
+$$
 
-Fit a linear model
+**(a) Fit a linear model using least squares on the training data and calculate the mean square error using the test data.**
+
+*1) Fit a linear model*
 ```{r}
 # Fit model using train data
 fit1 = lm(Solubility ~ ., data = train)
-summary(fit1)
+# summary(fit1) see the details
 ```
 
-MSE
+*2) MSE*
 ```{r}
-# MSE using test data
 pred_va <- predict(fit1, test)
-# validation set error
 mean((pred_va-test$Solubility)^2)
 ```
+The test MSE is `r mean((pred_va-test$Solubility)^2)` for this linear model.
 
-### (b) Fit a ridge regression model on the training data, with λ chosen by cross-validation. Report the test error.
+$$
+$$
 
-Fit a ridge regression model
+**(b) Fit a ridge regression model on the training data, with $\lambda$ chosen by cross-validation. Report the test error.**
+
+*1) Fit a ridge regression model*
 ```{r}
 train <- na.omit(train)
 
@@ -49,14 +57,14 @@ y_test <- test$Solubility
 
 ```{r}
 # fit the ridge regression (alpha = 0) with a sequence of lambdas
-ridge.mod <- glmnet(x_train, y_train, alpha=0, lambda = exp(seq(-1, 10, length=100)))
+ridge.mod <- glmnet(x_train, y_train, alpha=0, lambda = exp(seq(-5, 0, length=500)))
 ```
 
 ```{r}
 set.seed(1)
 cv.ridge <- cv.glmnet(x_train, y_train, 
                       alpha = 0, 
-                      lambda = exp(seq(-1, 10, length=100)), 
+                      lambda = exp(seq(-5, 0, length=500)), 
                       type.measure = "mse")
 
 plot(cv.ridge)
@@ -64,56 +72,91 @@ plot(cv.ridge)
 
 ```{r}
 best.lambda <- cv.ridge$lambda.min
-best.lambda
-predict(ridge.mod, s = best.lambda, type="coefficients")
+best.lambda 
+#predict(ridge.mod, s = best.lambda, type="coefficients")
+# all coefficients exist
 ```
+The $\lambda$ we choose is `r best.lambda`.
 
-MSE
+*2) MSE*
+
 ```{r}
 ridge.pred = predict(ridge.mod, s = best.lambda, newx = x_test)
 mean((ridge.pred - y_test)^2)
 ```
+The test MSE of this ridge model is `r mean((ridge.pred - y_test)^2)`.
 
+$$
+$$
 
-### (c) Fit a lasso model on the training data, with λ chosen by cross-validation. Report the test error, along with the number of non-zero coefficient estimates.
+**(c) Fit a lasso model on the training data, with $\lambda$ chosen by cross-validation. Report the test error, along with the number of non-zero coefficient estimates.**
 
-Fit a lasso model
+*1) Fit a lasso model*
 
 ```{r}
-lasso.mod <- glmnet(x_train, y_train, alpha=1, lambda = exp(seq(-1, 5, length=100)))
+lasso.mod <- glmnet(x_train, y_train, alpha=1, lambda = exp(seq(-6, -2, length=500)))
 ```
 
 ```{r}
 set.seed(1)
-cv.lasso <- cv.glmnet(x_train, y_train, alpha = 1, lambda = exp(seq(-1, 5, length=100)))
+cv.lasso <- cv.glmnet(x_train, y_train, alpha = 1, lambda = exp(seq(-6, -2, length=500)))
 best.lambda <- cv.lasso$lambda.min
 ```
 
 ```{r}
 plot(cv.lasso)
 ```
+The $\lambda$ we choose is `r best.lambda`.
 
-The number of non-zero coefficient estimates
+*2) The number of non-zero coefficient estimates*
 
 ```{r}
 lasso_coef = predict(cv.lasso, s="lambda.min", type="coefficients")
-lasso_coef
-lasso_coef[lasso_coef != 0] # Display only non-zero coefficients
+#lasso_coef some coefficients are shrunken to zero
+length(lasso_coef[lasso_coef != 0]) # the number of non-zero coefficients
 ```
+The number of non-zero coefficient is `r length(lasso_coef[lasso_coef != 0])`.
 
-The number of non-zero coefficient is 9.
-
-MSE
+*3) MSE*
 
 ```{r}
 lasso.pred = predict(lasso.mod, s=best.lambda, newx = x_test)
 mean((lasso.pred - y_test)^2)
 ```
+The test MSE of this lasso model is `r mean((lasso.pred - y_test)^2)`.
 
-#### (d) Fit a PCR model on the training data, with M chosen by cross-validation. Report the test error, along with the value of M selected by cross-validation.
+$$
+$$
 
+**(d) Fit a PCR model on the training data, with M chosen by cross-validation. Report the test error, along with the value of M selected by cross-validation.**
 
+*1) Fit a PCR model*
+```{r}
+set.seed(1)
+ctrl1 <- trainControl(method = "repeatedcv", number = 10, repeats = 5)
+pcr.fit <- train(x_train, y_train,
+                 method = "pcr",
+                 tuneLength = length(train),
+                 trControl = ctrl1,
+                 preProc = c("center", "scale"))
+```
 
+*2) the number of components*
+```{r}
+pcr.fit$bestTune
+```
+The number of components is `r pcr.fit$bestTune`.
 
+*3) MSE*
+```{r}
+pcr.pred = predict.train(pcr.fit, x_test)
+mean((pcr.pred-y_test)^2) 
+```
+The test MSE of this PCR model is `r mean((pcr.pred-y_test)^2)`.
 
-#### (e) Briefly discuss the results obtained in (a)∼(d).
+$$
+$$
+
+**(e) Briefly discuss the results obtained in (a)~(d).**
+
+From the test MSEs of these four models, we can see that the test MSE of linear model and PCR model are pretty high which suggests that the models do not perform well. The test MSEs of ridge and lasso model are relatively low so the models perform well using these two methods. Among all these methods, lasso model's MSE is the lowest and linear model's MSE is the highest, which suggests that lasso model is the best and linear regression model is the worst in this case.

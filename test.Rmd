@@ -1,50 +1,9 @@
 ---
-title: "test"
-output: html_document
+title: "Untitled"
+author: "xc2474 Xinlei Chen"
+date: "3/2/2019"
+output: pdf_document
 ---
 
-```{r}
-library(caret) 
-library(boot)
-```
 
-```{r}
-# Generate the data, you can replace this with your own function
-gen_data <- function(N) {
-X <- rnorm(N, mean = 1)
-X2 <- rnorm(N, mean = 1)
-eps <- rnorm(N, sd = .5)
-Y <- X + X2 + eps
-data.frame(Y = Y, X = X, X2 = X2)
-}
-set.seed(1)
-# generate training data N <- 200
-trainData <- gen_data(N)
-theme1 <- trellis.par.get()
-theme1$plot.symbol$col <- rgb(.2, .4, .2, .5) 
-theme1$plot.symbol$pch <- 16
-theme1$plot.line$col <- rgb(.8, .1, .1, 1) 
-theme1$plot.line$lwd <- 2 
-theme1$strip.background$col <- rgb(.0, .2, .6, .2) 
-trellis.par.set(theme1)
-
-featurePlot(x = trainData[,(2:3)],
-            y = trainData[,1],
-            plot = "scatter",
-            span = .5,
-            labels = c("Predictors","Y"), type = c("p", "smooth"), layout = c(2, 1))
-```
-
-```{r}
-trRows <- createDataPartition(trainData$Y, p = .50,
-list = FALSE)
-fit_tr <- lm(Y~., data = trainData[trRows,]) 
-pred_va <- predict(fit_tr, trainData[-trRows,]) # validation set error mean((pred_va-trainData$Y[-trRows])^2)
-```
-
-```{r}
-cvSplits <- createFolds(trainData$Y, k = 10,returnTrain = TRUE)
-str(cvSplits)
-returnTrain = TRUE)
-```
-
+**(e) Briefly discuss the results obtained in.**
